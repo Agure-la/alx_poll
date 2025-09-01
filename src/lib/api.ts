@@ -27,7 +27,9 @@ export class PollAPI {
         createdAt: new Date('2024-01-15'),
         updatedAt: new Date('2024-01-15'),
         isActive: true,
-        expiresAt: new Date('2024-12-31')
+        expiresAt: new Date('2024-12-31'),
+        allowMultipleVotes: false,
+        requireAuthentication: false
       }
     ];
   }
@@ -54,7 +56,9 @@ export class PollAPI {
       createdAt: new Date('2024-01-15'),
       updatedAt: new Date('2024-01-15'),
       isActive: true,
-      expiresAt: new Date('2024-12-31')
+      expiresAt: new Date('2024-12-31'),
+      allowMultipleVotes: false,
+      requireAuthentication: false
     };
   }
 
@@ -79,7 +83,9 @@ export class PollAPI {
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: true,
-      expiresAt: pollData.expiresAt
+      expiresAt: pollData.expiresAt,
+      allowMultipleVotes: pollData.allowMultipleVotes,
+      requireAuthentication: pollData.requireAuthentication
     };
 
     return {

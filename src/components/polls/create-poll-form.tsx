@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { PollAPI } from "@/lib/api";
 import { CreatePollForm } from "@/types";
 
@@ -17,6 +19,8 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
     title: "",
     description: "",
     options: ["", ""],
+    allowMultipleVotes: false,
+    requireAuthentication: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -153,6 +157,77 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
                 Add Option
               </Button>
             )}
+          </div>
+
+          {/* Poll Settings */}
+          <div className="space-y-6 border-t pt-6">
+            <div>
+              <Label className="text-base font-medium">Poll Settings</Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Configure how your poll will work and who can participate
+              </p>
+            </div>
+
+            {/* Multiple Votes Setting */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="multiple-votes" className="text-sm font-medium">
+                  Allow Multiple Votes
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Users can select multiple options in this poll
+                </p>
+              </div>
+              <Switch
+                id="multiple-votes"
+                checked={pollData.allowMultipleVotes}
+                onCheckedChange={(checked) =>
+                  setPollData({ ...pollData, allowMultipleVotes: checked })
+                }
+              />
+            </div>
+
+            {/* Authentication Requirement */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="require-auth" className="text-sm font-medium">
+                  Require Authentication
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Users must be logged in to vote on this poll
+                </p>
+              </div>
+              <Switch
+                id="require-auth"
+                checked={pollData.requireAuthentication}
+                onCheckedChange={(checked) =>
+                  setPollData({ ...pollData, requireAuthentication: checked })
+                }
+              />
+            </div>
+
+            {/* Expiration Date */}
+            <div className="space-y-2">
+              <Label htmlFor="expires-at" className="text-sm font-medium">
+                Expiration Date (Optional)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Set when this poll should automatically close
+              </p>
+              <Input
+                id="expires-at"
+                type="datetime-local"
+                value={pollData.expiresAt ? new Date(pollData.expiresAt.getTime() - pollData.expiresAt.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setPollData({
+                    ...pollData,
+                    expiresAt: value ? new Date(value) : undefined,
+                  });
+                }}
+                min={new Date().toISOString().slice(0, 16)}
+              />
+            </div>
           </div>
 
           {error && (

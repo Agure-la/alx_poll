@@ -24,6 +24,8 @@ export interface Poll {
   updatedAt: Date;
   isActive: boolean;
   expiresAt?: Date;
+  allowMultipleVotes: boolean;
+  requireAuthentication: boolean;
 }
 
 // Vote types
@@ -60,6 +62,8 @@ export interface CreatePollForm {
   description?: string;
   options: string[];
   expiresAt?: Date;
+  allowMultipleVotes: boolean;
+  requireAuthentication: boolean;
 }
 
 // API Response types

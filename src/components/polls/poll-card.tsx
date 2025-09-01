@@ -32,6 +32,12 @@ export function PollCard({ poll }: PollCardProps) {
             {expired && (
               <Badge variant="destructive">Expired</Badge>
             )}
+            {poll.allowMultipleVotes && (
+              <Badge variant="outline" className="text-xs">Multiple Choice</Badge>
+            )}
+            {poll.requireAuthentication && (
+              <Badge variant="outline" className="text-xs">Login Required</Badge>
+            )}
           </div>
         </div>
       </CardHeader>

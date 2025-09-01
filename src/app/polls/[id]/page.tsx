@@ -14,8 +14,10 @@ export default function PollPage() {
 
   const [poll, setPoll] = useState<Poll | null>(null);
   const [userVote, setUserVote] = useState<string | null>(null);
+  const [userVotes, setUserVotes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // TODO: Get from auth context
 
   useEffect(() => {
     const loadPoll = async () => {
@@ -102,6 +104,8 @@ export default function PollPage() {
         <PollDetails
           poll={poll}
           userVote={userVote}
+          userVotes={userVotes}
+          isAuthenticated={isAuthenticated}
           onVoteSuccess={handleVoteSuccess}
         />
 
