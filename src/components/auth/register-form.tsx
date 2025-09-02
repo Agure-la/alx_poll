@@ -1,19 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AuthService } from "@/lib/auth";
+import { useAuth } from "@/contexts/auth-context";
 import { RegisterCredentials } from "@/types";
 import { isValidEmail, isValidPassword } from "@/lib/utils";
 
-interface RegisterFormProps {
-  onSuccess?: () => void;
-}
-
-export function RegisterForm({ onSuccess }: RegisterFormProps) {
+export function RegisterForm() {
+  const router = useRouter();
+  const { register } = useAuth();
   const [credentials, setCredentials] = useState<RegisterCredentials>({
     email: "",
     username: "",
@@ -55,15 +54,18 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
     setIsLoading(true);
     setErrors({});
+    console.log('Submitting registration form with credentials:', credentials);
 
     try {
-      const user = await AuthService.register(credentials);
+      const user = await register(credentials);
+      console.log('Registration response from auth context:', user);
       if (user) {
-        onSuccess?.();
+        router.push("/auth/profile");
       } else {
         setErrors({ general: "Registration failed. Please try again." });
       }
     } catch (err) {
+      console.error('An unexpected error occurred during registration:', err);
       setErrors({ general: "Registration failed. Please try again." });
     } finally {
       setIsLoading(false);

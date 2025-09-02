@@ -4,8 +4,30 @@ import { Database } from '@/types/database';
 
 export class AuthService {
   static async login(credentials: LoginCredentials): Promise<AuthUser | null> {
+    let email = credentials.email;
+
+    // If username is provided instead of email, look up the email
+    if (credentials.username) {
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('username', credentials.username)
+        .single();
+
+      if (userError || !user) {
+        console.error('Login error: User not found');
+        return null;
+      }
+      email = user.email;
+    }
+
+    if (!email) {
+      console.error('Login error: Email or username is required');
+      return null;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
+      email: email,
       password: credentials.password
     });
     
@@ -13,15 +35,27 @@ export class AuthService {
       console.error('Login error:', error);
       return null;
     }
+
+    if (!data.user) {
+      return null;
+    }
+
+    const { data: profile } = await supabase
+      .from('users')
+      .select('username')
+      .eq('id', data.user.id)
+      .single();
     
-    return data.user ? {
+    return {
       id: data.user.id,
       email: data.user.email || '',
-      username: data.user.email?.split('@')[0] || ''
-    } : null;
+      username: profile?.username || data.user.email?.split('@')[0] || ''
+    };
   }
 
   static async register(credentials: RegisterCredentials): Promise<AuthUser | null> {
+    console.log('Attempting to register user:', credentials.email);
+
     // Check for existing user with the same email
     const { data: existingUser } = await supabase
       .from('users')
@@ -49,23 +83,44 @@ export class AuthService {
       console.error('Registration error:', error);
       return null;
     }
+    console.log('User signed up successfully:', data.user?.email);
     
     if (data.user) {
-      // Explicitly type the insert data to match the Database type
-      const userData: Database['public']['Tables']['users']['Insert'] = {
-        id: data.user.id,
-        email: data.user.email || '',
-        username: credentials.username
-      };
-      
-      // Wrap userData in an array for the insert method
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([userData]);
-      
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
+      // Sign in the user to get a session
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password
+      });
+
+      if (signInError) {
+        console.error('Sign-in after registration error:', signInError);
         return null;
+      }
+      console.log('User signed in successfully after registration:', signInData.user?.email);
+
+      if (signInData.user) {
+        // Explicitly type the insert data to match the Database type
+        const userData: Database['public']['Tables']['users']['Insert'] = {
+          id: signInData.user.id,
+          email: signInData.user.email || '',
+          username: credentials.username
+        };
+        
+        // Wrap userData in an array for the insert method
+        try {
+          const { error: profileError } = await supabase
+            .from('users')
+            .insert([userData]);
+          
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+            return null;
+          }
+        } catch (error) {
+          console.error('An unexpected error occurred during profile creation:', error);
+          return null;
+        }
+        console.log('User profile created successfully:', userData.username);
       }
     }
     

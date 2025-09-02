@@ -4,16 +4,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/auth-context";
 
-interface HeaderProps {
-  user?: {
-    id: string;
-    email: string;
-    username: string;
-  } | null;
-}
+export function Header() {
+  const { user, logout } = useAuth();
 
-export function Header({ user }: HeaderProps) {
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-4">
@@ -50,19 +45,19 @@ export function Header({ user }: HeaderProps) {
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium">{user.username}</span>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" asChild>
                   <Link href="/auth/profile">Profile</Link>
                 </Button>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={logout}>
                   Sign Out
                 </Button>
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" asChild>
                   <Link href="/auth/login">Sign In</Link>
                 </Button>
-                <Button size="sm">
+                <Button size="sm" asChild>
                   <Link href="/auth/register">Sign Up</Link>
                 </Button>
               </div>

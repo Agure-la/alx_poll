@@ -1,18 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AuthService } from "@/lib/auth";
+import { useAuth } from "@/contexts/auth-context";
 import { LoginCredentials } from "@/types";
 
-interface LoginFormProps {
-  onSuccess?: () => void;
-}
-
-export function LoginForm({ onSuccess }: LoginFormProps) {
+export function LoginForm() {
+  const router = useRouter();
+  const { login } = useAuth();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: "",
     password: "",
@@ -26,9 +25,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     setError("");
 
     try {
-      const user = await AuthService.login(credentials);
+      const user = await login(credentials);
       if (user) {
-        onSuccess?.();
+        router.push("/auth/profile");
       } else {
         setError("Invalid email or password");
       }
@@ -50,15 +49,19 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Email or Username</Label>
             <Input
               id="email"
-              type="email"
-              placeholder="Enter your email"
-              value={credentials.email}
-              onChange={(e) =>
-                setCredentials({ ...credentials, email: e.target.value })
-              }
+              type="text"
+              placeholder="Enter your email or username"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.includes('@')) {
+                  setCredentials({ email: value, password: credentials.password });
+                } else {
+                  setCredentials({ username: value, password: credentials.password });
+                }
+              }}
               required
             />
           </div>
