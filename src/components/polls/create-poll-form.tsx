@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { PollAPI } from "@/lib/api";
 import { CreatePollForm } from "@/types";
+import { createPollSchema } from "@/schemas";
 
 interface CreatePollFormProps {
   onSuccess?: (pollId: string) => void;
@@ -23,7 +24,7 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
     requireAuthentication: false,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleAddOption = () => {
     if (pollData.options.length < 10) {
@@ -56,35 +57,51 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
-
-    // Validation
-    if (!pollData.title.trim()) {
-      setError("Poll title is required");
-      setIsLoading(false);
-      return;
-    }
-
-    const validOptions = pollData.options.filter(option => option.trim());
-    if (validOptions.length < 2) {
-      setError("At least 2 options are required");
-      setIsLoading(false);
-      return;
-    }
+    setError(null);
 
     try {
-      const response = await PollAPI.createPoll({
-        ...pollData,
-        options: validOptions,
+      // Validate the form data
+      const validatedData = createPollSchema.parse({
+        title: pollData.title,
+        description: pollData.description || undefined,
+        options: pollData.options.filter(option => option.trim() !== ''),
+        allow_multiple_votes: pollData.allowMultipleVotes,
+        require_authentication: pollData.requireAuthentication,
+        expires_at: pollData.expiresAt ? pollData.expiresAt.toISOString() : undefined
       });
 
-      if (response.success && response.data) {
-        onSuccess?.(response.data.id);
+      const result = await PollAPI.createPoll({
+        title: validatedData.title,
+        description: validatedData.description,
+        options: validatedData.options,
+        allowMultipleVotes: validatedData.allow_multiple_votes,
+        requireAuthentication: validatedData.require_authentication,
+        expiresAt: validatedData.expires_at ? new Date(validatedData.expires_at) : undefined
+      });
+
+      if (result.success && result.data) {
+        // Reset form
+        setPollData({
+          title: '',
+          description: '',
+          options: ['', ''],
+          expiresAt: undefined,
+          allowMultipleVotes: false,
+          requireAuthentication: false,
+        });
+        
+        // Call success callback
+        onSuccess?.(result.data.id);
       } else {
-        setError(response.error || "Failed to create poll");
+        setError(result.error || 'Failed to create poll');
       }
-    } catch (err) {
-      setError("Failed to create poll. Please try again.");
+    } catch (err: any) {
+      console.error('Poll creation error:', err);
+      if (err.name === 'ZodError') {
+        setError('Please check your input and try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -231,14 +248,18 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
               {error}
             </div>
           )}
 
           <div className="flex gap-4">
-            <Button type="submit" disabled={isLoading} className="flex-1">
-              {isLoading ? "Creating Poll..." : "Create Poll"}
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading || pollData.title.trim() === '' || pollData.options.filter(opt => opt.trim() !== '').length < 2}
+            >
+              {isLoading ? 'Creating Poll...' : 'Create Poll'}
             </Button>
             <Button type="button" variant="outline">
               Cancel

@@ -2,13 +2,20 @@
 
 import { useRouter } from "next/navigation";
 import { CreatePollFormComponent } from "@/components/polls/create-poll-form";
+import { useState } from "react";
+import { Toast } from "@/components/ui/toast";
 
 export default function CreatePollPage() {
   const router = useRouter();
+  const [showToast, setShowToast] = useState(false);
 
   const handleSuccess = (pollId: string) => {
-    // Redirect to the newly created poll
-    router.push(`/polls/${pollId}`);
+    setShowToast(true);
+    
+    // Redirect to polls page after a short delay
+    setTimeout(() => {
+      router.push('/polls');
+    }, 1500);
   };
 
   return (
@@ -23,6 +30,14 @@ export default function CreatePollPage() {
 
         <CreatePollFormComponent onSuccess={handleSuccess} />
       </div>
+      
+      {showToast && (
+        <Toast 
+          message="Poll created successfully! Redirecting to polls page..." 
+          type="success"
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </div>
   );
 }

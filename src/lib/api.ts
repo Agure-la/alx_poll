@@ -1,128 +1,162 @@
 import { Poll, CreatePollForm, Vote, ApiResponse } from '@/types';
+import { createClientSupabaseClient } from '@/lib/supabase/client';
 
-// Mock API functions - replace with real implementation
 export class PollAPI {
   private static baseURL = '/api';
 
   static async getPolls(): Promise<Poll[]> {
-    // TODO: Replace with actual API call
-    console.log('Fetching polls');
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock data
-    return [
-      {
-        id: '1',
-        title: 'What\'s your favorite programming language?',
-        description: 'Vote for your preferred programming language for web development',
-        options: [
-          { id: '1', text: 'JavaScript', votes: 45 },
-          { id: '2', text: 'TypeScript', votes: 38 },
-          { id: '3', text: 'Python', votes: 22 },
-          { id: '4', text: 'Go', votes: 15 }
-        ],
-        createdBy: 'user1',
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-15'),
-        isActive: true,
-        expiresAt: new Date('2024-12-31'),
-        allowMultipleVotes: false,
-        requireAuthentication: false
+    try {
+      const response = await fetch(`${this.baseURL}/polls`);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch polls');
       }
-    ];
+      
+      return result.data || [];
+    } catch (error) {
+      console.error('Error fetching polls:', error);
+      throw error;
+    }
   }
 
   static async getPoll(id: string): Promise<Poll | null> {
-    // TODO: Replace with actual API call
-    console.log('Fetching poll:', id);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock single poll
-    return {
-      id,
-      title: 'What\'s your favorite programming language?',
-      description: 'Vote for your preferred programming language for web development',
-      options: [
-        { id: '1', text: 'JavaScript', votes: 45 },
-        { id: '2', text: 'TypeScript', votes: 38 },
-        { id: '3', text: 'Python', votes: 22 },
-        { id: '4', text: 'Go', votes: 15 }
-      ],
-      createdBy: 'user1',
-      createdAt: new Date('2024-01-15'),
-      updatedAt: new Date('2024-01-15'),
-      isActive: true,
-      expiresAt: new Date('2024-12-31'),
-      allowMultipleVotes: false,
-      requireAuthentication: false
-    };
+    try {
+      const response = await fetch(`${this.baseURL}/polls/${id}`);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch poll');
+      }
+      
+      return result.data || null;
+    } catch (error) {
+      console.error('Error fetching poll:', error);
+      throw error;
+    }
   }
 
   static async createPoll(pollData: CreatePollForm): Promise<ApiResponse<Poll>> {
-    // TODO: Replace with actual API call
-    console.log('Creating poll:', pollData);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock successful creation
-    const newPoll: Poll = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: pollData.title,
-      description: pollData.description,
-      options: pollData.options.map((text, index) => ({
-        id: (index + 1).toString(),
-        text,
-        votes: 0
-      })),
-      createdBy: 'current-user-id',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isActive: true,
-      expiresAt: pollData.expiresAt,
-      allowMultipleVotes: pollData.allowMultipleVotes,
-      requireAuthentication: pollData.requireAuthentication
-    };
+    try {
+      const response = await fetch(`${this.baseURL}/polls`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: pollData.title,
+          description: pollData.description || null,
+          options: pollData.options,
+          allow_multiple_votes: pollData.allowMultipleVotes,
+          require_authentication: pollData.requireAuthentication,
+          expires_at: pollData.expiresAt ? pollData.expiresAt.toISOString() : null
+        })
+      });
 
-    return {
-      success: true,
-      data: newPoll
-    };
+      const result = await response.json();
+      
+      if (!response.ok) {
+        return {
+          success: false,
+          error: result.error || 'Failed to create poll'
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data
+      };
+    } catch (error) {
+      console.error('Error creating poll:', error);
+      return {
+        success: false,
+        error: 'Network error occurred while creating poll'
+      };
+    }
   }
 
   static async vote(pollId: string, optionId: string): Promise<ApiResponse<Vote>> {
-    // TODO: Replace with actual API call
-    console.log('Voting on poll:', pollId, 'option:', optionId);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock successful vote
-    const vote: Vote = {
-      id: Math.random().toString(36).substr(2, 9),
-      pollId,
-      optionId,
-      userId: 'current-user-id',
-      createdAt: new Date()
-    };
+    try {
+      const response = await fetch(`${this.baseURL}/polls/${pollId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          option_id: optionId
+        })
+      });
 
-    return {
-      success: true,
-      data: vote
-    };
+      const result = await response.json();
+      
+      if (!response.ok) {
+        return {
+          success: false,
+          error: result.error || 'Failed to submit vote'
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data
+      };
+    } catch (error) {
+      console.error('Error voting:', error);
+      return {
+        success: false,
+        error: 'Network error occurred while voting'
+      };
+    }
   }
 
   static async getUserPolls(userId: string): Promise<Poll[]> {
-    // TODO: Replace with actual API call
-    console.log('Fetching user polls:', userId);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return [];
+    try {
+      const response = await fetch(`${this.baseURL}/polls?created_by=${userId}`);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch user polls');
+      }
+      
+      return result.data || [];
+    } catch (error) {
+      console.error('Error fetching user polls:', error);
+      throw error;
+    }
+  }
+
+  // Additional method for multiple votes
+  static async voteMultiple(pollId: string, optionIds: string[]): Promise<ApiResponse<Vote[]>> {
+    try {
+      const response = await fetch(`${this.baseURL}/polls/${pollId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          option_ids: optionIds
+        })
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        return {
+          success: false,
+          error: result.error || 'Failed to submit votes'
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data
+      };
+    } catch (error) {
+      console.error('Error voting multiple:', error);
+      return {
+        success: false,
+        error: 'Network error occurred while voting'
+      };
+    }
   }
 }
