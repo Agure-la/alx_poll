@@ -1,52 +1,70 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { PollAPI } from "@/lib/api";
-import { CreatePollForm } from "@/types";
-import { z } from "zod";
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { PollAPI } from '@/lib/api';
+import { CreatePollForm, Poll } from '@/types';
+import { useAuth } from '@/contexts/auth-context';
 
-// Define the schema inline since @/schemas module is not found
-export const createPollSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  options: z.array(z.string()).min(2, "At least 2 options are required"),
-  allow_multiple_votes: z.boolean(),
-  require_authentication: z.boolean(),
-  expires_at: z.string().optional()
-});
+export default function EditPollPage() {
+  const { id: pollId } = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
 
-interface CreatePollFormProps {
-  onSuccess?: (pollId: string) => void;
-}
-
-export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
-  const [pollData, setPollData] = useState<CreatePollForm>({
-    title: "",
-    description: "",
-    options: ["", ""],
-    allowMultipleVotes: false,
-    requireAuthentication: false,
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const [poll, setPoll] = useState<Poll | null>(null);
+  const [pollData, setPollData] = useState<CreatePollForm | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const fetchPoll = async () => {
+      try {
+        const fetchedPoll = await PollAPI.getPoll(pollId as string);
+        if (!fetchedPoll) {
+          setError('Poll not found');
+          return;
+        }
+        if (fetchedPoll.createdBy !== user?.id) {
+          setError('You are not authorized to edit this poll');
+          return;
+        }
+        setPoll(fetchedPoll);
+        setPollData({
+          title: fetchedPoll.title,
+          description: fetchedPoll.description,
+          options: fetchedPoll.options.map((o) => o.text),
+          allowMultipleVotes: fetchedPoll.allowMultipleVotes,
+          requireAuthentication: fetchedPoll.requireAuthentication,
+          expiresAt: fetchedPoll.expiresAt,
+        });
+      } catch (err) {
+        setError('Failed to fetch poll');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchPoll();
+    }
+  }, [pollId, user]);
+
   const handleAddOption = () => {
-    if (pollData.options.length < 10) {
+    if (pollData && pollData.options.length < 10) {
       setPollData({
         ...pollData,
-        options: [...pollData.options, ""],
+        options: [...pollData.options, ''],
       });
     }
   };
 
   const handleRemoveOption = (index: number) => {
-    if (pollData.options.length > 2) {
+    if (pollData && pollData.options.length > 2) {
       const newOptions = pollData.options.filter((_, i) => i !== index);
       setPollData({
         ...pollData,
@@ -56,74 +74,55 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
   };
 
   const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...pollData.options];
-    newOptions[index] = value;
-    setPollData({
-      ...pollData,
-      options: newOptions,
-    });
+    if (pollData) {
+      const newOptions = [...pollData.options];
+      newOptions[index] = value;
+      setPollData({
+        ...pollData,
+        options: newOptions,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!pollData) return;
+
     setIsLoading(true);
     setError(null);
 
     try {
-      // Validate the form data
-      const validatedData = createPollSchema.parse({
-        title: pollData.title,
-        description: pollData.description || undefined,
-        options: pollData.options.filter(option => option.trim() !== ''),
-        allow_multiple_votes: pollData.allowMultipleVotes,
-        require_authentication: pollData.requireAuthentication,
-        expires_at: pollData.expiresAt ? pollData.expiresAt.toISOString() : undefined
-      });
+      const result = await PollAPI.updatePoll(pollId as string, pollData);
 
-      const result = await PollAPI.createPoll({
-        title: validatedData.title,
-        description: validatedData.description,
-        options: validatedData.options,
-        allowMultipleVotes: validatedData.allow_multiple_votes,
-        requireAuthentication: validatedData.require_authentication,
-        expiresAt: validatedData.expires_at ? new Date(validatedData.expires_at) : undefined
-      });
-
-      if (result.success && result.data) {
-        // Reset form
-        setPollData({
-          title: '',
-          description: '',
-          options: ['', ''],
-          expiresAt: undefined,
-          allowMultipleVotes: false,
-          requireAuthentication: false,
-        });
-        
-        // Call success callback
-        onSuccess?.(result.data.id);
+      if (result.success) {
+        router.push(`/polls/${pollId}`);
       } else {
-        setError(result.error || 'Failed to create poll');
+        setError(result.error || 'Failed to update poll');
       }
-    } catch (err: any) {
-      console.error('Poll creation error:', err);
-      if (err.name === 'ZodError') {
-        setError('Please check your input and try again.');
-      } else {
-        setError('An unexpected error occurred. Please try again.');
-      }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
+
+  if (!pollData) {
+    return <div>Poll data could not be loaded.</div>;
+  }
+
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Create New Poll</CardTitle>
-        <CardDescription>
-          Create a poll to gather opinions from the community
-        </CardDescription>
+        <CardTitle>Edit Poll</CardTitle>
+        <CardDescription>Update the details of your poll</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -186,7 +185,6 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
             )}
           </div>
 
-          {/* Poll Settings */}
           <div className="space-y-6 border-t pt-6">
             <div>
               <Label className="text-base font-medium">Poll Settings</Label>
@@ -195,7 +193,6 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
               </p>
             </div>
 
-            {/* Multiple Votes Setting */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="multiple-votes" className="text-sm font-medium">
@@ -214,7 +211,6 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
               />
             </div>
 
-            {/* Authentication Requirement */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="require-auth" className="text-sm font-medium">
@@ -233,7 +229,6 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
               />
             </div>
 
-            {/* Expiration Date */}
             <div className="space-y-2">
               <Label htmlFor="expires-at" className="text-sm font-medium">
                 Expiration Date (Optional)
@@ -244,7 +239,7 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
               <Input
                 id="expires-at"
                 type="datetime-local"
-                value={pollData.expiresAt ? new Date(pollData.expiresAt.getTime() - pollData.expiresAt.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
+                value={pollData.expiresAt ? new Date(pollData.expiresAt).toISOString().slice(0, 16) : ''}
                 onChange={(e) => {
                   const value = e.target.value;
                   setPollData({
@@ -264,14 +259,14 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
           )}
 
           <div className="flex gap-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={isLoading || pollData.title.trim() === '' || pollData.options.filter(opt => opt.trim() !== '').length < 2}
             >
-              {isLoading ? 'Creating Poll...' : 'Create Poll'}
+              {isLoading ? 'Updating Poll...' : 'Update Poll'}
             </Button>
-            <Button type="button" variant="outline">
+            <Button type="button" variant="outline" onClick={() => router.back()}>
               Cancel
             </Button>
           </div>

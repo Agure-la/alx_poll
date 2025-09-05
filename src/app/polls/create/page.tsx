@@ -11,7 +11,13 @@ export default function CreatePollPage() {
 
   const handleSuccess = (pollId: string) => {
     setShowToast(true);
-    
+// Validate that poll expiration date is not in the past
+const expirationDate = new Date(pollId);
+if (expirationDate < new Date()) {
+  setShowToast(false);
+  alert('Poll expiration date cannot be in the past');
+  return;
+}
     // Redirect to polls page after a short delay
     setTimeout(() => {
       router.push('/polls');

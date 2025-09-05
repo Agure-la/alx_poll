@@ -1,17 +1,19 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Poll } from "@/types";
-import { formatDate, calculateTotalVotes, isExpired } from "@/lib/utils";
+import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Poll } from '@/types';
+import { formatDate, calculateTotalVotes, isExpired } from '@/lib/utils';
 
 interface PollCardProps {
   poll: Poll;
+  isOwner: boolean;
+  onDelete: (pollId: string) => void;
 }
 
-export function PollCard({ poll }: PollCardProps) {
+export function PollCard({ poll, isOwner, onDelete }: PollCardProps) {
   const totalVotes = calculateTotalVotes(poll.options);
   const expired = poll.expiresAt ? isExpired(poll.expiresAt) : false;
 
@@ -21,23 +23,13 @@ export function PollCard({ poll }: PollCardProps) {
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <CardTitle className="text-lg">{poll.title}</CardTitle>
-            {poll.description && (
-              <CardDescription>{poll.description}</CardDescription>
-            )}
+            {poll.description && <CardDescription>{poll.description}</CardDescription>}
           </div>
           <div className="flex gap-2">
-            {!poll.isActive && (
-              <Badge variant="secondary">Inactive</Badge>
-            )}
-            {expired && (
-              <Badge variant="destructive">Expired</Badge>
-            )}
-            {poll.allowMultipleVotes && (
-              <Badge variant="outline" className="text-xs">Multiple Choice</Badge>
-            )}
-            {poll.requireAuthentication && (
-              <Badge variant="outline" className="text-xs">Login Required</Badge>
-            )}
+            {!poll.isActive && <Badge variant="secondary">Inactive</Badge>}
+            {expired && <Badge variant="destructive">Expired</Badge>}
+            {poll.allowMultipleVotes && <Badge variant="outline" className="text-xs">Multiple Choice</Badge>}
+            {poll.requireAuthentication && <Badge variant="outline" className="text-xs">Login Required</Badge>}
           </div>
         </div>
       </CardHeader>
@@ -47,7 +39,7 @@ export function PollCard({ poll }: PollCardProps) {
             <span>{totalVotes} votes</span>
             <span>Created {formatDate(poll.createdAt)}</span>
           </div>
-          
+
           <div className="space-y-2">
             {poll.options.slice(0, 2).map((option) => (
               <div key={option.id} className="text-sm">
@@ -66,26 +58,31 @@ export function PollCard({ poll }: PollCardProps) {
               </div>
             ))}
             {poll.options.length > 2 && (
-              <p className="text-xs text-muted-foreground">
-                +{poll.options.length - 2} more options
-              </p>
+              <p className="text-xs text-muted-foreground">+{poll.options.length - 2} more options</p>
             )}
           </div>
 
           <div className="flex gap-2">
             <Button asChild className="flex-1">
-              <Link href={`/polls/${poll.id}`}>
-                View Poll
-              </Link>
+              <Link href={`/polls/${poll.id}`}>View Poll</Link>
             </Button>
             {poll.isActive && !expired && (
               <Button variant="outline" asChild>
-                <Link href={`/polls/${poll.id}`}>
-                  Vote Now
-                </Link>
+                <Link href={`/polls/${poll.id}`}>Vote Now</Link>
               </Button>
             )}
           </div>
+
+          {isOwner && (
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/polls/${poll.id}/edit`}>Edit</Link>
+              </Button>
+              <Button variant="destructive" size="sm" onClick={() => onDelete(poll.id)}>
+                Delete
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { PollCard } from "@/components/polls/poll-card";
 import { Poll } from "@/types";
 import { PollAPI } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function PollsPage() {
+  const { user } = useAuth();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [filteredPolls, setFilteredPolls] = useState<Poll[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,6 +56,15 @@ export default function PollsPage() {
 
     setFilteredPolls(filtered);
   }, [polls, searchTerm, filter]);
+
+  const handleDelete = async (pollId: string) => {
+    try {
+      await PollAPI.deletePoll(pollId);
+      setPolls(polls.filter((p) => p.id !== pollId));
+    } catch (error) {
+      console.error("Failed to delete poll:", error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -123,7 +134,12 @@ export default function PollsPage() {
               </p>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredPolls.map((poll) => (
-                  <PollCard key={poll.id} poll={poll} />
+                  <PollCard
+                    key={poll.id}
+                    poll={poll}
+                    isOwner={poll.createdBy === user?.id}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </div>
             </>

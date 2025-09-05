@@ -1,5 +1,5 @@
 import { Poll, CreatePollForm, Vote, ApiResponse } from '@/types';
-import { createClientSupabaseClient } from '@/lib/supabase/client';
+//import { createClientSupabaseClient } from '@/lib/supabase/client';
 
 export class PollAPI {
   private static baseURL = '/api';

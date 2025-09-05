@@ -18,7 +18,7 @@ export class AuthService {
         console.error('Login error: User not found');
         return null;
       }
-      email = user.email;
+      email = (user as { email: string }).email;
     }
 
     if (!email) {
@@ -49,7 +49,7 @@ export class AuthService {
     return {
       id: data.user.id,
       email: data.user.email || '',
-      username: profile?.username || data.user.email?.split('@')[0] || ''
+      username: (profile as { username: string } | null)?.username || data.user.email?.split('@')[0] || ''
     };
   }
 
@@ -155,7 +155,7 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email || '',
-      username: profile?.username || user.email?.split('@')[0] || ''
+      username: (profile as { username: string } | null)?.username || user.email?.split('@')[0] || ''
     };
   }
 
