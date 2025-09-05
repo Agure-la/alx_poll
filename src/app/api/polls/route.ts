@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     let pollsQuery = supabase
       .from('poll_results')
-      .select('*')
+      .select('*, created_by')
 
     // Apply filters
     if (status === 'active') {
@@ -143,3 +143,4 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+

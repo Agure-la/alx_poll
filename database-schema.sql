@@ -103,12 +103,12 @@ CREATE INDEX idx_votes_created_at ON public.votes(created_at);
 
 -- Functions for automatic updates
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS $
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$ language 'plpgsql';
 
 -- Triggers for updated_at
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users
@@ -122,7 +122,7 @@ CREATE TRIGGER update_poll_analytics_updated_at BEFORE UPDATE ON public.poll_ana
 
 -- Function to update poll analytics
 CREATE OR REPLACE FUNCTION update_poll_analytics()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS $
 BEGIN
     INSERT INTO public.poll_analytics (poll_id, total_votes, unique_voters, last_vote_at)
     VALUES (NEW.poll_id, 1, 1, NEW.created_at)
@@ -137,7 +137,7 @@ BEGIN
         updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$ language 'plpgsql';
 
 -- Trigger to update analytics on vote
 CREATE TRIGGER update_analytics_on_vote AFTER INSERT ON public.votes
@@ -227,11 +227,12 @@ CREATE POLICY "Authenticated users can create shares" ON public.poll_shares
     FOR INSERT WITH CHECK (shared_by = auth.uid());
 
 -- Views for easier querying
-CREATE VIEW public.poll_results AS
+CREATE OR REPLACE VIEW public.poll_results AS
 SELECT 
     p.id as poll_id,
     p.title,
     p.description,
+    p.created_by,
     p.allow_multiple_votes,
     p.require_authentication,
     p.expires_at,
@@ -250,13 +251,13 @@ JOIN public.poll_options po ON p.id = po.poll_id
 LEFT JOIN public.votes v ON po.id = v.option_id
 LEFT JOIN public.poll_analytics pa ON p.id = pa.poll_id
 WHERE p.is_active = TRUE
-GROUP BY p.id, p.title, p.description, p.allow_multiple_votes, p.require_authentication, 
+GROUP BY p.id, p.title, p.description, p.created_by, p.allow_multiple_votes, p.require_authentication, 
          p.expires_at, po.id, po.text, po.order_index, pa.total_votes
 ORDER BY p.created_at DESC, po.order_index;
 
 -- Function to get user's vote for a poll
 CREATE OR REPLACE FUNCTION get_user_vote(poll_uuid UUID)
-RETURNS TABLE(option_id UUID, option_text TEXT) AS $$
+RETURNS TABLE(option_id UUID, option_text TEXT) AS $
 BEGIN
     RETURN QUERY
     SELECT po.id, po.text
@@ -265,4 +266,4 @@ BEGIN
     WHERE v.poll_id = poll_uuid 
     AND v.voter_id = auth.uid();
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -1,5 +1,4 @@
 import { Poll, CreatePollForm, Vote, ApiResponse } from '@/types';
-//import { createClientSupabaseClient } from '@/lib/supabase/client';
 
 export class PollAPI {
   private static baseURL = '/api';
@@ -71,6 +70,59 @@ export class PollAPI {
       return {
         success: false,
         error: 'Network error occurred while creating poll'
+      };
+    }
+  }
+
+  static async updatePoll(pollId: string, pollData: CreatePollForm): Promise<ApiResponse<Poll>> {
+    try {
+      const response = await fetch(`${this.baseURL}/polls/${pollId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pollData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: result.error || 'Failed to update poll',
+        };
+      }
+
+      return { success: true, data: result.data };
+    } catch (error) {
+      console.error('Error updating poll:', error);
+      return {
+        success: false,
+        error: 'Network error occurred while updating poll',
+      };
+    }
+  }
+
+  static async deletePoll(pollId: string): Promise<ApiResponse<null>> {
+    try {
+      const response = await fetch(`${this.baseURL}/polls/${pollId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        return {
+          success: false,
+          error: result.error || 'Failed to delete poll',
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting poll:', error);
+      return {
+        success: false,
+        error: 'Network error occurred while deleting poll',
       };
     }
   }

@@ -88,3 +88,4 @@ export function PollCard({ poll, isOwner, onDelete }: PollCardProps) {
     </Card>
   );
 }
+
