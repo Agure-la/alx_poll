@@ -9,6 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/contexts/auth-context";
 import { LoginCredentials } from "@/types";
 
+/**
+ * A form for users to sign in to their accounts.
+ * It handles user input, form submission, and displays error messages.
+ */
 export function LoginForm() {
   const router = useRouter();
   const { login } = useAuth();
@@ -19,6 +23,11 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  /**
+   * Handles the form submission.
+   * It calls the `login` function from the authentication context and redirects the user to their profile page on success.
+   * @param e The form event.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -27,6 +36,7 @@ export function LoginForm() {
     try {
       const user = await login(credentials);
       if (user) {
+        // On successful login, redirect the user to their profile page.
         router.push("/auth/profile");
       } else {
         setError("Invalid email or password");
@@ -56,6 +66,8 @@ export function LoginForm() {
               placeholder="Enter your email or username"
               onChange={(e) => {
                 const value = e.target.value;
+                // The user can enter either an email or a username.
+                // We check if the input contains an '@' symbol to determine which one it is.
                 if (value.includes('@')) {
                   setCredentials({ email: value, password: credentials.password });
                 } else {

@@ -9,14 +9,27 @@ import { Poll } from "@/types";
 import { formatDate, calculateTotalVotes, calculatePercentage, isExpired } from "@/lib/utils";
 import { PollAPI } from "@/lib/api";
 
+/**
+ * The properties for the `PollDetails` component.
+ */
 interface PollDetailsProps {
+  /** The poll to display. */
   poll: Poll;
+  /** The user's vote for the poll. */
   userVote?: string | null;
-  userVotes?: string[]; // For multiple votes
+  /** The user's votes for the poll (for multiple choice polls). */
+  userVotes?: string[];
+  /** A callback function that is called when the user votes successfully. */
   onVoteSuccess?: () => void;
+  /** Whether the user is authenticated. */
   isAuthenticated?: boolean;
 }
 
+/**
+ * A component that displays the details of a poll.
+ * It allows users to vote on the poll and view the results.
+ * @param {PollDetailsProps} props - The component properties.
+ */
 export function PollDetails({ poll, userVote, userVotes = [], onVoteSuccess, isAuthenticated = false }: PollDetailsProps) {
   const [selectedOption, setSelectedOption] = useState<string>("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>(userVotes);
@@ -28,9 +41,13 @@ export function PollDetails({ poll, userVote, userVotes = [], onVoteSuccess, isA
   const hasVoted = poll.allowMultipleVotes ? userVotes.length > 0 : userVote;
   const canVote = poll.isActive && !expired && !hasVoted;
   
-  // Check authentication requirement
+  // We check if the poll requires authentication and if the user is authenticated.
   const needsAuth = poll.requireAuthentication && !isAuthenticated;
 
+  /**
+   * Handles the vote submission.
+   * It calls the `vote` or `voteMultiple` method from the `PollAPI` and calls the `onVoteSuccess` callback.
+   */
   const handleVote = async () => {
     if (poll.allowMultipleVotes) {
       if (selectedOptions.length === 0) {
@@ -49,11 +66,12 @@ export function PollDetails({ poll, userVote, userVotes = [], onVoteSuccess, isA
 
     try {
       if (poll.allowMultipleVotes) {
-        // Handle multiple votes - you might need to update the API to handle this
+        // If the poll allows multiple votes, we call the `voteMultiple` method.
         for (const optionId of selectedOptions) {
           await PollAPI.vote(poll.id, optionId);
         }
       } else {
+        // Otherwise, we call the `vote` method.
         const response = await PollAPI.vote(poll.id, selectedOption);
         if (!response.success) {
           setError(response.error || "Failed to vote");
@@ -68,14 +86,20 @@ export function PollDetails({ poll, userVote, userVotes = [], onVoteSuccess, isA
     }
   };
 
+  /**
+   * Handles the selection of a poll option.
+   * @param optionId The ID of the option to select.
+   */
   const handleOptionToggle = (optionId: string) => {
     if (poll.allowMultipleVotes) {
+      // If the poll allows multiple votes, we toggle the option in the `selectedOptions` array.
       setSelectedOptions(prev => 
         prev.includes(optionId) 
           ? prev.filter(id => id !== optionId)
           : [...prev, optionId]
       );
     } else {
+      // Otherwise, we set the `selectedOption` to the selected option.
       setSelectedOption(optionId);
     }
   };
@@ -87,6 +111,7 @@ export function PollDetails({ poll, userVote, userVotes = [], onVoteSuccess, isA
           <div className="flex items-start justify-between">
             <CardTitle className="text-xl">{poll.title}</CardTitle>
             <div className="flex gap-2">
+              {/* We display badges to indicate the poll's status and settings. */}
               {!poll.isActive && (
                 <Badge variant="secondary">Inactive</Badge>
               )}
@@ -151,6 +176,7 @@ export function PollDetails({ poll, userVote, userVotes = [], onVoteSuccess, isA
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-3 flex-1">
+                      {/* If the poll allows multiple votes, we display a checkbox for each option. */}
                       {poll.allowMultipleVotes && canVote && !needsAuth && (
                         <Checkbox
                           checked={isSelected}
@@ -171,6 +197,7 @@ export function PollDetails({ poll, userVote, userVotes = [], onVoteSuccess, isA
                       </span>
                     </div>
                   </div>
+                  {/* If the user has already voted or the poll is not active, we display the results. */}
                   {(hasVoted || !canVote) && (
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
@@ -189,6 +216,7 @@ export function PollDetails({ poll, userVote, userVotes = [], onVoteSuccess, isA
           })}
         </div>
 
+        {/* If the user can vote, we display the vote button. */}
         {canVote && !needsAuth && (
           <div className="space-y-4">
             {error && (
@@ -209,24 +237,28 @@ export function PollDetails({ poll, userVote, userVotes = [], onVoteSuccess, isA
           </div>
         )}
 
+        {/* If the poll requires authentication and the user is not authenticated, we display a message. */}
         {needsAuth && (
           <div className="text-center text-sm text-muted-foreground bg-blue-50 p-3 rounded">
             You must be logged in to vote on this poll.
           </div>
         )}
 
+        {/* If the user has already voted, we display a thank you message. */}
         {hasVoted && (
           <div className="text-center text-sm text-muted-foreground bg-green-50 p-3 rounded">
             Thank you for voting! You can view the results above.
           </div>
         )}
 
+        {/* If the poll is not active, we display a message. */}
         {!poll.isActive && (
           <div className="text-center text-sm text-muted-foreground bg-gray-50 p-3 rounded">
             This poll is no longer active.
           </div>
         )}
 
+        {/* If the poll has expired, we display a message. */}
         {expired && (
           <div className="text-center text-sm text-muted-foreground bg-orange-50 p-3 rounded">
             This poll has expired and no longer accepts votes.

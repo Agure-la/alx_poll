@@ -1,8 +1,16 @@
 import { Poll, CreatePollForm, Vote, ApiResponse } from '@/types';
 
+/**
+ * A class that provides methods for interacting with the poll API.
+ * This class encapsulates all the logic for making API requests to the poll endpoints.
+ */
 export class PollAPI {
   private static baseURL = '/api';
 
+  /**
+   * Fetches a list of polls from the API.
+   * @returns A promise that resolves to an array of polls.
+   */
   static async getPolls(): Promise<Poll[]> {
     try {
       const response = await fetch(`${this.baseURL}/polls`);
@@ -19,6 +27,11 @@ export class PollAPI {
     }
   }
 
+  /**
+   * Fetches a single poll from the API by its ID.
+   * @param id The ID of the poll to fetch.
+   * @returns A promise that resolves to the poll object or null if not found.
+   */
   static async getPoll(id: string): Promise<Poll | null> {
     try {
       const response = await fetch(`${this.baseURL}/polls/${id}`);
@@ -35,6 +48,11 @@ export class PollAPI {
     }
   }
 
+  /**
+   * Creates a new poll.
+   * @param pollData The data for the new poll.
+   * @returns A promise that resolves to the created poll.
+   */
   static async createPoll(pollData: CreatePollForm): Promise<ApiResponse<Poll>> {
     try {
       const response = await fetch(`${this.baseURL}/polls`, {
@@ -74,6 +92,12 @@ export class PollAPI {
     }
   }
 
+  /**
+   * Updates an existing poll.
+   * @param pollId The ID of the poll to update.
+   * @param pollData The new data for the poll.
+   * @returns A promise that resolves to the updated poll.
+   */
   static async updatePoll(pollId: string, pollData: CreatePollForm): Promise<ApiResponse<Poll>> {
     try {
       const response = await fetch(`${this.baseURL}/polls/${pollId}`, {
@@ -103,6 +127,11 @@ export class PollAPI {
     }
   }
 
+  /**
+   * Deletes a poll.
+   * @param pollId The ID of the poll to delete.
+   * @returns A promise that resolves when the poll is deleted.
+   */
   static async deletePoll(pollId: string): Promise<ApiResponse<null>> {
     try {
       const response = await fetch(`${this.baseURL}/polls/${pollId}`, {
@@ -127,6 +156,12 @@ export class PollAPI {
     }
   }
 
+  /**
+   * Submits a vote for a poll.
+   * @param pollId The ID of the poll to vote on.
+   * @param optionId The ID of the option to vote for.
+   * @returns A promise that resolves to the new vote object.
+   */
   static async vote(pollId: string, optionId: string): Promise<ApiResponse<Vote>> {
     try {
       const response = await fetch(`${this.baseURL}/polls/${pollId}/vote`, {
@@ -161,6 +196,11 @@ export class PollAPI {
     }
   }
 
+  /**
+   * Fetches all polls created by a specific user.
+   * @param userId The ID of the user.
+   * @returns A promise that resolves to an array of polls.
+   */
   static async getUserPolls(userId: string): Promise<Poll[]> {
     try {
       const response = await fetch(`${this.baseURL}/polls?created_by=${userId}`);
@@ -177,7 +217,12 @@ export class PollAPI {
     }
   }
 
-  // Additional method for multiple votes
+  /**
+   * Submits multiple votes for a poll.
+   * @param pollId The ID of the poll to vote on.
+   * @param optionIds The IDs of the options to vote for.
+   * @returns A promise that resolves to an array of new vote objects.
+   */
   static async voteMultiple(pollId: string, optionIds: string[]): Promise<ApiResponse<Vote[]>> {
     try {
       const response = await fetch(`${this.baseURL}/polls/${pollId}/vote`, {

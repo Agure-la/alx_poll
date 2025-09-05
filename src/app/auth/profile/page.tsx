@@ -11,6 +11,11 @@ import { PollAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 
+/**
+ * The user profile page.
+ * This page displays the user's account information and a list of the polls they have created.
+ * It is a protected route, so only authenticated users can access it.
+ */
 function ProfilePage() {
   const { user, loading } = useAuth();
   const [userPolls, setUserPolls] = useState<Poll[]>([]);
@@ -18,6 +23,7 @@ function ProfilePage() {
   const [editData, setEditData] = useState({ username: "", email: "" });
 
   useEffect(() => {
+    // When the user is loaded, we fetch their polls and set the edit data.
     if (user) {
       setEditData({ username: user.username, email: user.email });
       const loadPolls = async () => {
@@ -28,6 +34,10 @@ function ProfilePage() {
     }
   }, [user]);
 
+  /**
+   * Handles saving the user's profile information.
+   * @todo Implement the logic to save the user's profile.
+   */
   const handleSaveProfile = async () => {
     // Implement save profile logic here
   };

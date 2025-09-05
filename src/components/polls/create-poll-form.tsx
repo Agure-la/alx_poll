@@ -11,7 +11,7 @@ import { PollAPI } from "@/lib/api";
 import { CreatePollForm } from "@/types";
 import { z } from "zod";
 
-// Define the schema inline since @/schemas module is not found
+// The Zod schema for validating the create poll form.
 export const createPollSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
@@ -21,10 +21,19 @@ export const createPollSchema = z.object({
   expires_at: z.string().optional()
 });
 
+/**
+ * The properties for the `CreatePollFormComponent` component.
+ */
 interface CreatePollFormProps {
+  /** A callback function that is called when the poll is created successfully. */
   onSuccess?: (pollId: string) => void;
 }
 
+/**
+ * A form for creating a new poll.
+ * It handles user input, form validation, and submission.
+ * @param {CreatePollFormProps} props - The component properties.
+ */
 export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
   const [pollData, setPollData] = useState<CreatePollForm>({
     title: "",
@@ -36,6 +45,9 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Adds a new option to the poll.
+   */
   const handleAddOption = () => {
     if (pollData.options.length < 10) {
       setPollData({
@@ -45,6 +57,10 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
     }
   };
 
+  /**
+   * Removes an option from the poll.
+   * @param index The index of the option to remove.
+   */
   const handleRemoveOption = (index: number) => {
     if (pollData.options.length > 2) {
       const newOptions = pollData.options.filter((_, i) => i !== index);
@@ -55,6 +71,11 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
     }
   };
 
+  /**
+   * Handles changes to a poll option.
+   * @param index The index of the option to change.
+   * @param value The new value of the option.
+   */
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...pollData.options];
     newOptions[index] = value;
@@ -64,13 +85,18 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
     });
   };
 
+  /**
+   * Handles the form submission.
+   * It validates the form data, creates the poll, and calls the `onSuccess` callback.
+   * @param e The form event.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
-      // Validate the form data
+      // We validate the form data using the Zod schema.
       const validatedData = createPollSchema.parse({
         title: pollData.title,
         description: pollData.description || undefined,
@@ -80,6 +106,7 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
         expires_at: pollData.expiresAt ? pollData.expiresAt.toISOString() : undefined
       });
 
+      // We call the `createPoll` method from the `PollAPI` to create the poll.
       const result = await PollAPI.createPoll({
         title: validatedData.title,
         description: validatedData.description,
@@ -90,7 +117,7 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
       });
 
       if (result.success && result.data) {
-        // Reset form
+        // If the poll is created successfully, we reset the form and call the `onSuccess` callback.
         setPollData({
           title: '',
           description: '',
@@ -100,7 +127,6 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
           requireAuthentication: false,
         });
         
-        // Call success callback
         onSuccess?.(result.data.id);
       } else {
         setError(result.error || 'Failed to create poll');

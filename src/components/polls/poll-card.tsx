@@ -7,12 +7,23 @@ import { Button } from '@/components/ui/button';
 import { Poll } from '@/types';
 import { formatDate, calculateTotalVotes, isExpired } from '@/lib/utils';
 
+/**
+ * The properties for the `PollCard` component.
+ */
 interface PollCardProps {
+  /** The poll to display. */
   poll: Poll;
+  /** Whether the current user is the owner of the poll. */
   isOwner: boolean;
+  /** A callback function that is called when the poll is deleted. */
   onDelete: (pollId: string) => void;
 }
 
+/**
+ * A component that displays a poll in a card format.
+ * It shows the poll title, description, options, and other information.
+ * @param {PollCardProps} props - The component properties.
+ */
 export function PollCard({ poll, isOwner, onDelete }: PollCardProps) {
   const totalVotes = calculateTotalVotes(poll.options);
   const expired = poll.expiresAt ? isExpired(poll.expiresAt) : false;
@@ -26,6 +37,7 @@ export function PollCard({ poll, isOwner, onDelete }: PollCardProps) {
             {poll.description && <CardDescription>{poll.description}</CardDescription>}
           </div>
           <div className="flex gap-2">
+            {/* We display badges to indicate the poll's status and settings. */}
             {!poll.isActive && <Badge variant="secondary">Inactive</Badge>}
             {expired && <Badge variant="destructive">Expired</Badge>}
             {poll.allowMultipleVotes && <Badge variant="outline" className="text-xs">Multiple Choice</Badge>}
@@ -41,12 +53,14 @@ export function PollCard({ poll, isOwner, onDelete }: PollCardProps) {
           </div>
 
           <div className="space-y-2">
+            {/* We show a preview of the first two poll options. */}
             {poll.options.slice(0, 2).map((option) => (
               <div key={option.id} className="text-sm">
                 <div className="flex justify-between mb-1">
                   <span>{option.text}</span>
                   <span>{option.votes} votes</span>
                 </div>
+                {/* The progress bar shows the percentage of votes for each option. */}
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="bg-primary h-2 rounded-full"
@@ -73,6 +87,7 @@ export function PollCard({ poll, isOwner, onDelete }: PollCardProps) {
             )}
           </div>
 
+          {/* If the user is the owner of the poll, we show the edit and delete buttons. */}
           {isOwner && (
             <div className="flex gap-2 mt-4">
               <Button variant="outline" size="sm" asChild>
@@ -88,4 +103,3 @@ export function PollCard({ poll, isOwner, onDelete }: PollCardProps) {
     </Card>
   );
 }
-

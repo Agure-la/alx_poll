@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ALX-Polly: A Real-time Polling Application
+
+ALX-Polly is a full-stack web application that allows users to create, manage, and vote on real-time polls. It provides a simple and intuitive interface for users to create polls, share them with others, and see the results in real-time. The application is built with Next.js, Supabase, and Tailwind CSS.
+
+## Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org/) (v14+ with App Router)
+- **Database**: [Supabase](https://supabase.io/) (PostgreSQL)
+- **Authentication**: [Supabase Auth](https://supabase.io/docs/guides/auth)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with [Shadcn UI](https://ui.shadcn.com/)
+- **ORM**: [Supabase-js](https://supabase.io/docs/library/js/getting-started)
+- **Validation**: [Zod](https://zod.dev/)
+
+## Features
+
+- User authentication (email/password and social logins)
+- Create, edit, and delete polls
+- Public and private polls
+- Real-time voting with instant updates
+- QR code generation for easy poll sharing
+- User dashboard to manage polls
+- Responsive design for mobile and desktop
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v18 or later)
+- npm, yarn, or pnpm
+
+### Setup
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/your-username/alx-polly.git
+   cd alx-polly
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up Supabase:**
+
+   - Create a new project on [Supabase](https://app.supabase.io/).
+   - Go to the **SQL Editor** and run the SQL script from `database-schema.sql` to create the necessary tables and functions.
+   - In your Supabase project, go to **Settings** > **API**.
+   - Find your **Project URL** and **anon public** key.
+
+4. **Configure environment variables:**
+
+   - Create a `.env.local` file in the root of the project.
+   - Add the following environment variables to the file:
+
+     ```
+     NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+     ```
+
+### Running the Application
+
+To run the development server, use the following command:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Testing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+To run the tests, use the following command:
 
-## Learn More
+```bash
+npm test
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Usage
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Creating a Poll
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Log in to your account.
+2. Click on the **Create New Poll** button.
+3. Fill in the poll details, including the title, description, and options.
+4. Configure the poll settings, such as allowing multiple votes or requiring authentication.
+5. Click on the **Create Poll** button.
 
-## Deploy on Vercel
+### Voting on a Poll
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Open the poll link or scan the QR code.
+2. Select your desired option(s).
+3. Click on the **Submit Vote** button.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+The easiest way to deploy this application is with [Vercel](https://vercel.com/). You can connect your GitHub repository to Vercel and it will automatically deploy the application whenever you push new changes.

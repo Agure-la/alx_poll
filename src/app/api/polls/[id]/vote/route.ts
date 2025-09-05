@@ -2,20 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/client'
 import { voteSchema, multipleVoteSchema } from '@/lib/validations'
 
+/**
+ * API endpoint for submitting a single vote on a poll.
+ * @param request The incoming request object.
+ * @returns A response object with the new vote or an error message.
+ */
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
     
-    // Parse and validate request body
+    // We parse and validate the request body using a Zod schema.
     const body = await request.json()
     const validatedData = voteSchema.parse(body)
 
-    // Get user IP and user agent
+    // We get the user's IP address and user agent from the request headers.
+    // This information can be used for analytics or to prevent duplicate votes.
     const forwarded = request.headers.get('x-forwarded-for')
     const ip = forwarded ? forwarded.split(',')[0] : request.ip || 'unknown'
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
-    // Check if poll exists and is active
+    // We check if the poll exists and is currently active.
     const { data: poll, error: pollError } = await supabase
       .from('polls')
       .select('*')
@@ -30,7 +36,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if poll has expired
+    // We check if the poll has expired.
     if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
       return NextResponse.json(
         { error: 'Poll has expired' },
@@ -38,7 +44,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check authentication requirement
+    // If the poll requires authentication, we check if the user is logged in.
     if (poll.require_authentication) {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) {
@@ -50,7 +56,8 @@ export async function POST(request: NextRequest) {
       validatedData.voter_id = user.id
     }
 
-    // Check if user has already voted
+    // We check if the user has already voted on this poll.
+    // This is to prevent users from voting multiple times.
     let existingVote
     if (validatedData.voter_id) {
       const { data: vote } = await supabase
@@ -85,7 +92,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify option exists and belongs to poll
+    // We verify that the selected option exists and belongs to the poll.
     const { data: option, error: optionError } = await supabase
       .from('poll_options')
       .select('id')
@@ -100,7 +107,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Submit vote
+    // Once all the checks have passed, we submit the vote to the database.
     const { data: vote, error: voteError } = await supabase
       .from('votes')
       .insert({
@@ -145,16 +152,22 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Multiple votes API (for polls with allow_multiple_votes = true)
+/**
+ * API endpoint for submitting multiple votes on a poll.
+ * This is only for polls that have `allow_multiple_votes` set to `true`.
+ * @param request The incoming request object.
+ * @returns A response object with the new votes or an error message.
+ */
 export async function PUT(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
     
-    // Parse and validate request body
+    // We parse and validate the request body using a Zod schema.
     const body = await request.json()
     const validatedData = multipleVoteSchema.parse(body)
 
-    // Get authenticated user
+    // We get the authenticated user.
+    // Multiple votes can only be submitted by authenticated users.
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json(
@@ -163,7 +176,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Check if poll exists and allows multiple votes
+    // We check if the poll exists, is active, and allows multiple votes.
     const { data: poll, error: pollError } = await supabase
       .from('polls')
       .select('*')
@@ -179,7 +192,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Check if poll has expired
+    // We check if the poll has expired.
     if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
       return NextResponse.json(
         { error: 'Poll has expired' },
@@ -187,7 +200,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Check if user has already voted
+    // We check if the user has already voted on this poll.
     const { data: existingVote } = await supabase
       .from('votes')
       .select('id')
@@ -202,7 +215,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Verify all options exist and belong to poll
+    // We verify that all the selected options exist and belong to the poll.
     const { data: options, error: optionsError } = await supabase
       .from('poll_options')
       .select('id')
@@ -216,12 +229,12 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Get user IP and user agent
+    // We get the user's IP address and user agent.
     const forwarded = request.headers.get('x-forwarded-for')
     const ip = forwarded ? forwarded.split(',')[0] : request.ip || 'unknown'
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
-    // Submit multiple votes
+    // We submit the multiple votes to the database.
     const votesData = validatedData.option_ids.map(optionId => ({
       poll_id: validatedData.poll_id,
       option_id: optionId,

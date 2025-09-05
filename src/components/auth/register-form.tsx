@@ -10,6 +10,10 @@ import { useAuth } from "@/contexts/auth-context";
 import { RegisterCredentials } from "@/types";
 import { isValidEmail, isValidPassword } from "@/lib/utils";
 
+/**
+ * A form for users to create a new account.
+ * It handles user input, form validation, submission, and displays error messages.
+ */
 export function RegisterForm() {
   const router = useRouter();
   const { register } = useAuth();
@@ -22,6 +26,11 @@ export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  /**
+   * Validates the registration form.
+   * It checks for a valid email, username length, password strength, and if the passwords match.
+   * @returns A boolean indicating whether the form is valid.
+   */
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -45,6 +54,12 @@ export function RegisterForm() {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handles the form submission.
+   * It validates the form, calls the `register` function from the authentication context,
+   * and redirects the user to their profile page on success.
+   * @param e The form event.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -60,6 +75,7 @@ export function RegisterForm() {
       const user = await register(credentials);
       console.log('Registration response from auth context:', user);
       if (user) {
+        // On successful registration, redirect the user to their profile page.
         router.push("/auth/profile");
       } else {
         setErrors({ general: "Registration failed. Please try again." });
