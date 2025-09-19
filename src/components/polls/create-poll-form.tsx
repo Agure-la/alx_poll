@@ -1,146 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { PollAPI } from "@/lib/api";
-import { CreatePollForm } from "@/types";
-import { z } from "zod";
+import { createPoll } from "@/lib/actions";
 
-// The Zod schema for validating the create poll form.
-export const createPollSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  options: z.array(z.string()).min(2, "At least 2 options are required"),
-  allow_multiple_votes: z.boolean(),
-  require_authentication: z.boolean(),
-  expires_at: z.string().optional()
-});
+const initialState = {
+  success: false,
+  message: "",
+  pollId: null,
+  errors: null,
+};
 
-/**
- * The properties for the `CreatePollFormComponent` component.
- */
-interface CreatePollFormProps {
-  /** A callback function that is called when the poll is created successfully. */
-  onSuccess?: (pollId: string) => void;
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? "Creating Poll..." : "Create Poll"}
+    </Button>
+  );
 }
 
-/**
- * A form for creating a new poll.
- * It handles user input, form validation, and submission.
- * @param {CreatePollFormProps} props - The component properties.
- */
-export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
-  const [pollData, setPollData] = useState<CreatePollForm>({
-    title: "",
-    description: "",
-    options: ["", ""],
-    allowMultipleVotes: false,
-    requireAuthentication: false,
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function CreatePollFormComponent({ onSuccess }: { onSuccess?: (pollId: string) => void; }) {
+  const [state, formAction] = useFormState(createPoll, initialState);
+  const [options, setOptions] = useState(["", ""]);
+  const router = useRouter();
 
-  /**
-   * Adds a new option to the poll.
-   */
+  useEffect(() => {
+    if (state.success && state.pollId) {
+      if (onSuccess) {
+        onSuccess(state.pollId);
+      } else {
+        router.push(`/polls/${state.pollId}`);
+      }
+    }
+  }, [state, onSuccess, router]);
+
   const handleAddOption = () => {
-    if (pollData.options.length < 10) {
-      setPollData({
-        ...pollData,
-        options: [...pollData.options, ""],
-      });
+    if (options.length < 10) {
+      setOptions([...options, ""]);
     }
   };
 
-  /**
-   * Removes an option from the poll.
-   * @param index The index of the option to remove.
-   */
   const handleRemoveOption = (index: number) => {
-    if (pollData.options.length > 2) {
-      const newOptions = pollData.options.filter((_, i) => i !== index);
-      setPollData({
-        ...pollData,
-        options: newOptions,
-      });
+    if (options.length > 2) {
+      setOptions(options.filter((_, i) => i !== index));
     }
   };
 
-  /**
-   * Handles changes to a poll option.
-   * @param index The index of the option to change.
-   * @param value The new value of the option.
-   */
   const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...pollData.options];
+    const newOptions = [...options];
     newOptions[index] = value;
-    setPollData({
-      ...pollData,
-      options: newOptions,
-    });
-  };
-
-  /**
-   * Handles the form submission.
-   * It validates the form data, creates the poll, and calls the `onSuccess` callback.
-   * @param e The form event.
-   */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // We validate the form data using the Zod schema.
-      const validatedData = createPollSchema.parse({
-        title: pollData.title,
-        description: pollData.description || undefined,
-        options: pollData.options.filter(option => option.trim() !== ''),
-        allow_multiple_votes: pollData.allowMultipleVotes,
-        require_authentication: pollData.requireAuthentication,
-        expires_at: pollData.expiresAt ? pollData.expiresAt.toISOString() : undefined
-      });
-
-      // We call the `createPoll` method from the `PollAPI` to create the poll.
-      const result = await PollAPI.createPoll({
-        title: validatedData.title,
-        description: validatedData.description,
-        options: validatedData.options,
-        allowMultipleVotes: validatedData.allow_multiple_votes,
-        requireAuthentication: validatedData.require_authentication,
-        expiresAt: validatedData.expires_at ? new Date(validatedData.expires_at) : undefined
-      });
-
-      if (result.success && result.data) {
-        // If the poll is created successfully, we reset the form and call the `onSuccess` callback.
-        setPollData({
-          title: '',
-          description: '',
-          options: ['', ''],
-          expiresAt: undefined,
-          allowMultipleVotes: false,
-          requireAuthentication: false,
-        });
-        
-        onSuccess?.(result.data.id);
-      } else {
-        setError(result.error || 'Failed to create poll');
-      }
-    } catch (err: any) {
-      console.error('Poll creation error:', err);
-      if (err.name === 'ZodError') {
-        setError('Please check your input and try again.');
-      } else {
-        setError('An unexpected error occurred. Please try again.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    setOptions(newOptions);
   };
 
   return (
@@ -152,43 +68,39 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form action={formAction} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="title">Poll Title *</Label>
             <Input
               id="title"
+              name="title"
               placeholder="What question do you want to ask?"
-              value={pollData.title}
-              onChange={(e) =>
-                setPollData({ ...pollData, title: e.target.value })
-              }
               required
             />
+            {state.errors?.title && <p className="text-sm text-destructive">{state.errors.title}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description (Optional)</Label>
             <Input
               id="description"
+              name="description"
               placeholder="Add more context to your poll"
-              value={pollData.description}
-              onChange={(e) =>
-                setPollData({ ...pollData, description: e.target.value })
-              }
             />
           </div>
 
           <div className="space-y-4">
             <Label>Poll Options *</Label>
-            {pollData.options.map((option, index) => (
+            {options.map((option, index) => (
               <div key={index} className="flex gap-2">
                 <Input
+                  name="options[]"
                   placeholder={`Option ${index + 1}`}
                   value={option}
                   onChange={(e) => handleOptionChange(index, e.target.value)}
                   required={index < 2}
                 />
-                {pollData.options.length > 2 && index >= 2 && (
+                {options.length > 2 && (
                   <Button
                     type="button"
                     variant="outline"
@@ -200,7 +112,8 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
                 )}
               </div>
             ))}
-            {pollData.options.length < 10 && (
+            {state.errors?.options && <p className="text-sm text-destructive">{state.errors.options}</p>}
+            {options.length < 10 && (
               <Button
                 type="button"
                 variant="outline"
@@ -212,7 +125,6 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
             )}
           </div>
 
-          {/* Poll Settings */}
           <div className="space-y-6 border-t pt-6">
             <div>
               <Label className="text-base font-medium">Poll Settings</Label>
@@ -221,83 +133,61 @@ export function CreatePollFormComponent({ onSuccess }: CreatePollFormProps) {
               </p>
             </div>
 
-            {/* Multiple Votes Setting */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="multiple-votes" className="text-sm font-medium">
+                <Label htmlFor="allow_multiple_votes" className="text-sm font-medium">
                   Allow Multiple Votes
                 </Label>
                 <p className="text-xs text-muted-foreground">
                   Users can select multiple options in this poll
                 </p>
               </div>
-              <Switch
-                id="multiple-votes"
-                checked={pollData.allowMultipleVotes}
-                onCheckedChange={(checked) =>
-                  setPollData({ ...pollData, allowMultipleVotes: checked })
-                }
-              />
+              <Switch id="allow_multiple_votes" name="allow_multiple_votes" />
             </div>
 
-            {/* Authentication Requirement */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="require-auth" className="text-sm font-medium">
+                <Label htmlFor="require_authentication" className="text-sm font-medium">
                   Require Authentication
                 </Label>
                 <p className="text-xs text-muted-foreground">
                   Users must be logged in to vote on this poll
                 </p>
               </div>
-              <Switch
-                id="require-auth"
-                checked={pollData.requireAuthentication}
-                onCheckedChange={(checked) =>
-                  setPollData({ ...pollData, requireAuthentication: checked })
-                }
-              />
+              <Switch id="require_authentication" name="require_authentication" defaultChecked />
             </div>
 
-            {/* Expiration Date */}
             <div className="space-y-2">
-              <Label htmlFor="expires-at" className="text-sm font-medium">
+              <Label htmlFor="expires_at" className="text-sm font-medium">
                 Expiration Date (Optional)
               </Label>
               <p className="text-xs text-muted-foreground">
                 Set when this poll should automatically close
               </p>
               <Input
-                id="expires-at"
+                id="expires_at"
+                name="expires_at"
                 type="datetime-local"
-                value={pollData.expiresAt ? new Date(pollData.expiresAt.getTime() - pollData.expiresAt.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setPollData({
-                    ...pollData,
-                    expiresAt: value ? new Date(value) : undefined,
-                  });
-                }}
                 min={new Date().toISOString().slice(0, 16)}
               />
             </div>
           </div>
 
-          {error && (
+          {!state.success && state.message && (
             <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
-              {error}
+              {state.message}
             </div>
+          )}
+          
+          {state.success && state.message && (
+             <div className="bg-green-600/15 text-green-700 text-sm p-3 rounded-md">
+                {state.message}
+             </div>
           )}
 
           <div className="flex gap-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading || pollData.title.trim() === '' || pollData.options.filter(opt => opt.trim() !== '').length < 2}
-            >
-              {isLoading ? 'Creating Poll...' : 'Create Poll'}
-            </Button>
-            <Button type="button" variant="outline">
+            <SubmitButton />
+            <Button type="button" variant="outline" onClick={() => router.back()}>
               Cancel
             </Button>
           </div>
