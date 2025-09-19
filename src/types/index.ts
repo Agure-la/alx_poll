@@ -15,6 +15,9 @@ export interface PollOption {
 }
 
 export interface Poll {
+  viewCount: any;
+  views: number;
+  startedCount: any;
   id: string;
   title: string;
   description?: string;
@@ -30,6 +33,8 @@ export interface Poll {
 
 // Vote types
 export interface Vote {
+  sessionId: string;
+  timeToVote: number;
   id: string;
   pollId: string;
   optionId: string;

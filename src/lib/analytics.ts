@@ -6,8 +6,8 @@ import { AnalyticsData, VotingTrend, OptionAnalytics, Insight, TimeFrame, Engage
  */
 export function calculateEngagementRate(poll: Poll, votes: Vote[]): number {
   if (!poll.viewCount || poll.viewCount === 0) return 0;
-  const uniqueVoters = new Set(votes.map(vote => vote.userId || vote.sessionId)).size;
-  return (uniqueVoters / poll.viewCount) * 100;
+  const uniqueVoters = new Set(votes.map(vote => vote.userId)).size;
+  return (uniqueVoters / (poll.views || 0)) * 100;
 }
 
 /**
@@ -88,7 +88,7 @@ export function generateInsights(poll: Poll, analytics: AnalyticsData): Insight[
   // Voting trend insight
   const recentTrends = analytics.votingTrends.slice(-7); // Last 7 periods
   const isIncreasing = recentTrends.length > 1 && 
-    recentTrends[recentTrends.length - 1].votes > recentTrends[0].votes;
+    (recentTrends[recentTrends.length - 1]?.votes ?? 0) > (recentTrends[0]?.votes ?? 0);
     
   if (isIncreasing) {
     insights.push({
@@ -126,7 +126,7 @@ export function generateInsights(poll: Poll, analytics: AnalyticsData): Insight[
  */
 export function calculateEngagementMetrics(poll: Poll, votes: Vote[]): EngagementMetrics {
   const uniqueVoters = new Set(votes.map(vote => vote.userId || vote.sessionId)).size;
-  const viewsToVotes = poll.viewCount ? (uniqueVoters / poll.viewCount) * 100 : 0;
+  const viewsToVotes = poll.views ? (uniqueVoters / poll.views) * 100 : 0;
   
   // Calculate completion rate (users who voted vs users who started)
   const completionRate = poll.startedCount ? (uniqueVoters / poll.startedCount) * 100 : 100;
@@ -174,11 +174,11 @@ function groupVotesByTimeFrame(votes: Vote[], timeFrame: TimeFrame): Record<stri
         key = `${date.getFullYear()}-${date.getMonth()}`;
         break;
       default:
-        key = date.toISOString().split('T')[0];
+        key = date.toISOString().split('T')[0] || date.toDateString();
     }
     
     if (!acc[key]) acc[key] = [];
-    acc[key].push(vote);
+    acc[key]?.push(vote) ?? (acc[key] = [vote]);
     return acc;
   }, {} as Record<string, Vote[]>);
 }

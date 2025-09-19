@@ -1,26 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/database'
+import { Database } from '@/types/database'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
-  }
-})
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
-// Server-side Supabase client (with service role key)
-export const createServerSupabaseClient = () => {
+// Server-side client with service role for admin operations
+export function createServerSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase environment variables')
+  }
   
   return createClient<Database>(supabaseUrl, supabaseServiceKey, {
     auth: {
@@ -28,6 +21,11 @@ export const createServerSupabaseClient = () => {
       persistSession: false
     }
   })
+}
+
+// Client-side client for user operations
+export function createClientSupabaseClient() {
+  return createClient<Database>(supabaseUrl, supabaseAnonKey)
 }
 
 // Auth helpers

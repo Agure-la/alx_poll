@@ -50,7 +50,7 @@ export class AppError extends Error {
     this.statusCode = statusCode;
     this.isOperational = isOperational;
     this.timestamp = new Date();
-    this.details = details;
+    this.details = details || {};
     
     // Maintains proper stack trace for where our error was thrown
     Error.captureStackTrace(this, this.constructor);

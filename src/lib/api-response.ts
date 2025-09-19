@@ -41,7 +41,7 @@ export function handleApiError(error: unknown, context?: Record<string, any>): N
       400,
       true,
       {
-        validationErrors: error.errors.map(err => ({
+        validationErrors: error.issues.map(err => ({
           field: err.path.join('.'),
           message: err.message,
           code: err.code
@@ -87,4 +87,35 @@ export function createApiResponse<T>(
     createSuccessResponse(data, message, meta),
     { status }
   );
+}
+
+// Add the missing ApiResponse class that analytics route expects
+export class ApiResponse {
+  static success<T>(
+    data: T,
+    message?: string,
+    meta?: SuccessResponse<T>['meta']
+  ): NextResponse {
+    return NextResponse.json(
+      createSuccessResponse(data, message, meta),
+      { status: 200 }
+    );
+  }
+
+  static error(
+    message: string,
+    statusCode: number = 500,
+    code?: string
+  ): NextResponse {
+    const error = new AppError(
+      message,
+      (code as any) || 'INTERNAL_SERVER_ERROR',
+      statusCode
+    );
+    
+    return NextResponse.json(
+      formatErrorResponse(error),
+      { status: statusCode }
+    );
+  }
 }
